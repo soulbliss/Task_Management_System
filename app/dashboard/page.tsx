@@ -1,9 +1,14 @@
 "use client"
 
+import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { LogOut } from 'lucide-react'
+import { TaskStats } from "@/lib/types/task";
+import StatsCards from "./components/stats-cards";
+import RecentTasks from "./components/recent-tasks";
+import TaskStatusChart from './components/task-status-chart';
 
 export default function DashboardPage() {
   const summaryData = {
@@ -41,122 +46,43 @@ export default function DashboardPage() {
       <main className="container mx-auto py-6 px-4">
         <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
         
-        <div className="grid gap-6">
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Summary</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.totalTasks}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Total tasks</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.tasksCompleted}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Tasks completed</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.tasksPending}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Tasks pending</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.averageTime}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Average time per completed task</p>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          </div>
 
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Pending task summary</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.pendingTasks}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Pending tasks</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.totalTimeLapsed}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Total time lapsed</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-4xl font-bold text-indigo-600">
-                    {summaryData.timeToFinish}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">Total time to finish</p>
-                  <p className="text-xs text-gray-400">estimated based on endtime</p>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
+          <Suspense fallback={<div>Loading stats...</div>}>
+            <StatsCards />
+          </Suspense>
 
-          <section>
-            <Card>
-              <CardHeader>
-                <CardTitle>Task priority breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Task priority</TableHead>
-                      <TableHead>Pending tasks</TableHead>
-                      <TableHead>Time lapsed (hrs)</TableHead>
-                      <TableHead>Time to finish (hrs)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {priorityData.map((row) => (
-                      <TableRow key={row.priority}>
-                        <TableCell>{row.priority}</TableCell>
-                        <TableCell>{row.pending}</TableCell>
-                        <TableCell>{row.timeLapsed}</TableCell>
-                        <TableCell>{row.timeToFinish}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </section>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Suspense fallback={<div>Loading chart...</div>}>
+              <TaskStatusChart />
+            </Suspense>
+            <Suspense fallback={<div>Loading tasks...</div>}>
+              <RecentTasks />
+            </Suspense>
+          </div>
         </div>
       </main>
     </div>
   )
+}
+
+function StatsCardsSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">--</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
 

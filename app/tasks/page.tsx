@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,36 +13,45 @@ import { Badge } from "@/components/ui/badge"
 import { LogOut, Plus, ArrowUpDown } from 'lucide-react'
 import { TaskDialog } from "@/components/task-dialog"
 import { format } from "date-fns"
+import { TaskForm } from '@/components/task-form'
+import { logger } from '@/lib/utils/logger'
 
 interface Task {
   id: number
   title: string
-  status: "pending" | "finished"
-  priority: number
-  startTime: Date
-  endTime: Date
+  description: string
+  status: string
+  start_time: string
+  end_time: string
+  created_at: string
 }
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: 1,
-      title: "Buy clothes",
-      status: "pending",
-      priority: 5,
-      startTime: new Date("2024-11-26T11:00"),
-      endTime: new Date("2024-11-30T11:00"),
-    },
-    {
-      id: 2,
-      title: "Finish code",
-      status: "finished",
-      priority: 2,
-      startTime: new Date("2024-11-25T09:05"),
-      endTime: new Date("2024-11-25T15:15"),
-    },
-    // Add more sample tasks as needed
-  ])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        const response = await fetch('/api/tasks')
+        if (!response.ok) {
+          throw new Error('Failed to fetch tasks')
+        }
+        const data = await response.json()
+        logger.debug('TasksPage', 'Fetched tasks', data)
+        setTasks(data.tasks)
+      } catch (error) {
+        const errorMessage = 'Failed to load tasks'
+        logger.error('TasksPage', errorMessage, { error })
+        setError(errorMessage)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTasks()
+  }, [])
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -74,81 +83,56 @@ export default function TasksPage() {
       </header>
 
       <main className="container mx-auto py-6 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Task list</h1>
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Sort
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>Start time: ASC</DropdownMenuItem>
-                <DropdownMenuItem>Start time: DESC</DropdownMenuItem>
-                <DropdownMenuItem>End time: ASC</DropdownMenuItem>
-                <DropdownMenuItem>End time: DESC</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button onClick={() => setIsDialogOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add task
-            </Button>
-          </div>
-        </div>
+        <div className="grid gap-6">
+          {/* Task Creation Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Task</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TaskForm />
+            </CardContent>
+          </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {tasks.map((task) => (
-            <Card key={task.id}>
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-indigo-600">{task.title}</h3>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant={task.status === "pending" ? "secondary" : "default"}>
-                        {task.status}
-                      </Badge>
-                      <Badge variant="outline">Priority: {task.priority}</Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm space-y-1">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-gray-500">Start</div>
-                      <div>{format(task.startTime, "dd-MMM-yy HH:mm")}</div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-gray-500">End</div>
-                      <div>{format(task.endTime, "dd-MMM-yy HH:mm")}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setEditingTask(task)
-                        setIsDialogOpen(true)
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-red-600 hover:text-red-700"
-                      onClick={() => handleDeleteTask(task.id)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
+          {/* Task List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Tasks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div>Loading tasks...</div>
+              ) : error ? (
+                <div className="text-red-500">{error}</div>
+              ) : tasks.length === 0 ? (
+                <div className="text-center text-muted-foreground">
+                  No tasks found. Create your first task above!
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              ) : (
+                <div className="space-y-4">
+                  {tasks.map((task) => (
+                    <Card key={task.id}>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold">{task.title}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {task.description}
+                            </p>
+                            <div className="flex gap-4 mt-2 text-sm">
+                              <span>Status: {task.status}</span>
+                              <span>Start: {new Date(task.start_time).toLocaleString()}</span>
+                              <span>End: {new Date(task.end_time).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </main>
 
