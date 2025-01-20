@@ -4,6 +4,94 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+  min-height: 100vh;
+  color: #2d3748;
+}
+
+/* Dashboard specific styles */
+.dashboard-layout {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  min-height: 100vh;
+}
+
+.dashboard-layout .card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-layout .card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Header styling */
+header {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Card content styling */
+.card-content {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+}
+
+/* Status badge styling */
+.bg-green-100 {
+  background: linear-gradient(45deg, #9ae6b4, #68d391);
+  color: #1a4731;
+}
+
+.bg-blue-100 {
+  background: linear-gradient(45deg, #90cdf4, #63b3ed);
+  color: #1a365d;
+}
+
+.bg-yellow-100 {
+  background: linear-gradient(45deg, #faf089, #f6e05e);
+  color: #744210;
+}
+
+/* Icon gradients */
+.text-green-600 {
+  background: linear-gradient(45deg, #38a169, #48bb78);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-blue-600 {
+  background: linear-gradient(45deg, #3182ce, #4299e1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-yellow-600 {
+  background: linear-gradient(45deg, #d69e2e, #ecc94b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Button styling */
+button {
+  background: linear-gradient(45deg, #4299e1, #667eea);
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background: linear-gradient(45deg, #3182ce, #5a67d8);
+  transform: translateY(-1px);
+}
+
+/* Loading animation */
+.animate-spin {
+  border-color: #667eea;
+  border-right-color: transparent;
 }
 
 @layer utilities {
@@ -85,4 +173,36 @@ body {
 /* Hide specific header in dashboard */
 body > div > main > div > div > header {
   display: none !important;
+}
+
+/* Card animations and enhanced hover effects */
+.card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.2)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
 }
