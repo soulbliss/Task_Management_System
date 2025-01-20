@@ -30,12 +30,13 @@ declare module "next-auth/jwt" {
 const authConfig = {
   providers: [
     CredentialsProvider({
+      id: 'credentials',
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         logger.debug('Attempting to authorize user', { email: credentials?.email });
 
         if (!credentials?.email || !credentials?.password) {
@@ -54,7 +55,7 @@ const authConfig = {
 
           if (!user) {
             logger.warn('User not found', { email: credentials.email });
-            throw new Error('No user found with this email');
+            return null;
           }
 
           // Verify password
@@ -62,7 +63,7 @@ const authConfig = {
 
           if (!isValid) {
             logger.warn('Invalid password', { email: credentials.email });
-            throw new Error('Invalid password');
+            return null;
           }
 
           logger.info('User authenticated successfully', { userId: user.id });
@@ -77,7 +78,7 @@ const authConfig = {
             error: error instanceof Error ? error.message : 'Unknown error',
             email: credentials.email
           });
-          throw error;
+          return null;
         }
       }
     })
@@ -86,11 +87,13 @@ const authConfig = {
     signIn: '/login',
     error: '/login',
   },
+  secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt" as "jwt" | "database"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: User | null }) {
+    async jwt({ token, user }) {
       if (user) {
         logger.debug('Creating JWT token', { userId: user.id });
         token.id = user.id;
@@ -98,7 +101,7 @@ const authConfig = {
       }
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }) {
+    async session({ session, token }) {
       if (session.user) {
         logger.debug('Creating user session', { userId: token.id });
         session.user.id = token.id;
@@ -106,7 +109,8 @@ const authConfig = {
       }
       return session;
     }
-  }
+  },
+  debug: process.env.NODE_ENV === 'development',
 };
 
 export const auth = NextAuth(authConfig);
