@@ -1,15 +1,5 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoginForm from "./login-form";
 
 export const metadata: Metadata = {
@@ -17,39 +7,26 @@ export const metadata: Metadata = {
   description: "Login to your account",
 };
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: { registered?: string };
-}) {
+export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>
-            Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {searchParams.registered && (
-            <Alert className="mb-4">
-              <AlertDescription>
-                Registration successful! Please log in with your credentials.
-              </AlertDescription>
-            </Alert>
-          )}
-          <LoginForm />
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-gray-500">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              Register here
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+        <div>
+          <h2 className="text-center text-3xl font-extrabold text-gray-900">
+            Sign in to your account
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Or{" "}
+            <Link
+              href="/register"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
+              create a new account
             </Link>
-          </div>
-        </CardFooter>
-      </Card>
+          </p>
+        </div>
+        <LoginForm />
+      </div>
     </div>
   );
 } 

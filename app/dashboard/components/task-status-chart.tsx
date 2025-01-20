@@ -3,10 +3,26 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { logger } from '@/lib/utils/logger';
 
 interface TaskStatusCount {
-  name: string;
+  status: string;
+  count: number;
+}
+
+interface TaskStats {
+  total_count: number;
+  pending_count: number;
+  in_progress_count: number;
+  completed_count: number;
+}
+
+interface CustomizedLabelProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  percent: number;
   value: number;
 }
 
@@ -25,7 +41,7 @@ const renderCustomizedLabel = ({
   outerRadius,
   percent,
   value,
-}: any) => {
+}: CustomizedLabelProps) => {
   if (value === 0) return null;
   
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -53,45 +69,34 @@ export default function TaskStatusChart() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchTaskStats() {
+    async function fetchStats() {
       try {
         const response = await fetch('/api/dashboard/stats', {
           credentials: 'include',
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch task statistics');
         }
-        
-        const stats = await response.json();
-        logger.debug('TaskStatusChart', 'Fetched task stats', stats);
 
-        // Transform the data for the pie chart
-        const chartData = [
-          {
-            name: 'Pending',
-            value: stats.pendingTasks || 0
-          },
-          {
-            name: 'In Progress',
-            value: stats.inProgressTasks || 0
-          },
-          {
-            name: 'Completed',
-            value: stats.completedTasks || 0
-          }
-        ];
+        const stats: TaskStats = await response.json();
         
+        // Transform the data for the pie chart
+        const chartData: TaskStatusCount[] = [
+          { status: 'Pending', count: stats.pending_count },
+          { status: 'In Progress', count: stats.in_progress_count },
+          { status: 'Completed', count: stats.completed_count },
+        ];
+
         setData(chartData);
-      } catch (err) {
-        logger.error('TaskStatusChart', 'Error fetching task stats', { error: err });
-        setError('Failed to load task statistics');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'An error occurred');
       } finally {
         setIsLoading(false);
       }
     }
 
-    fetchTaskStats();
+    fetchStats();
   }, []);
 
   if (isLoading) {
@@ -120,7 +125,7 @@ export default function TaskStatusChart() {
     );
   }
 
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const total = data.reduce((sum, item) => sum + item.count, 0);
   if (total === 0) {
     return (
       <Card>
@@ -150,14 +155,14 @@ export default function TaskStatusChart() {
               label={renderCustomizedLabel}
               outerRadius={100}
               innerRadius={40}
-              dataKey="value"
-              nameKey="name"
+              dataKey="count"
+              nameKey="status"
               paddingAngle={2}
             >
               {data.map((entry) => (
                 <Cell
-                  key={entry.name}
-                  fill={COLORS[entry.name as keyof typeof COLORS]}
+                  key={entry.status}
+                  fill={COLORS[entry.status as keyof typeof COLORS]}
                   strokeWidth={1}
                 />
               ))}
@@ -170,8 +175,8 @@ export default function TaskStatusChart() {
             />
             <Legend 
               formatter={(value: string) => {
-                const item = data.find(d => d.name === value);
-                const count = item?.value || 0;
+                const item = data.find(d => d.status === value);
+                const count = item?.count || 0;
                 const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : 0;
                 return `${value} (${count} - ${percentage}%)`;
               }}

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from 'next-auth/next';
+import { auth } from '@/lib/auth';
 import { TaskService } from '@/lib/services/taskService';
 import { TaskUpdate } from '@/lib/types/task';
 import { logger } from '@/lib/utils/logger';
 import { getUserByEmail } from '@/lib/services/userService';
+import type { Session } from 'next-auth';
 
 interface RouteParams {
   params: {
@@ -14,7 +15,7 @@ interface RouteParams {
 
 export async function GET(req: Request, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(auth) as Session | null;
     
     if (!session?.user?.email) {
       logger.warn('GET /api/tasks/[id]', 'Unauthorized access attempt');
@@ -54,7 +55,7 @@ export async function GET(req: Request, { params }: RouteParams) {
 
 export async function PATCH(req: Request, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(auth) as Session | null;
     
     if (!session?.user?.email) {
       logger.warn('PATCH /api/tasks/[id]', 'Unauthorized access attempt');
@@ -96,7 +97,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 
 export async function DELETE(req: Request, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(auth) as Session | null;
     
     if (!session?.user?.email) {
       logger.warn('DELETE /api/tasks/[id]', 'Unauthorized access attempt');

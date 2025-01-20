@@ -1,21 +1,28 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
+import { auth } from '@/lib/auth';
 import { TaskService } from '@/lib/services/taskService';
 import { TaskCreate } from '@/lib/types/task';
-import { authOptions } from '@/lib/auth';
+import type { Session } from 'next-auth';
+import { getUserByEmail } from '@/lib/services/userService';
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const session = await getServerSession(auth) as Session | null;
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    const result = await TaskService.getTasks(parseInt(session.user.id), page, limit);
+    const result = await TaskService.getTasks(user.id, page, limit);
 
     return NextResponse.json(result);
   } catch (error) {
@@ -29,9 +36,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const session = await getServerSession(auth) as Session | null;
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await getUserByEmail(session.user.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const body = await req.json();
@@ -64,7 +76,7 @@ export async function POST(req: Request) {
       end_time: endTime
     };
 
-    const result = await TaskService.createTask(parseInt(session.user.id), task);
+    const result = await TaskService.createTask(user.id, task);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

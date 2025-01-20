@@ -1,10 +1,33 @@
-import { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import pool from "@/lib/db";
-import { logger } from "@/lib/utils/logger";
+import NextAuth from "next-auth/next"
+import type { Session, User } from "next-auth"
+import type { JWT } from "next-auth/jwt"
+import CredentialsProvider from "next-auth/providers/credentials"
+import bcrypt from "bcryptjs"
+import pool from "@/lib/db"
+import { logger } from "@/lib/utils/logger"
 
-export const authOptions: NextAuthOptions = {
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      email: string;
+    }
+  }
+
+  interface User {
+    id: string;
+    email: string;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    email: string;
+  }
+}
+
+const authConfig = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -13,10 +36,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        logger.debug('Auth', 'Attempting to authorize user', { email: credentials?.email });
+        logger.debug('Attempting to authorize user', { email: credentials?.email });
 
         if (!credentials?.email || !credentials?.password) {
-          logger.warn('Auth', 'Missing credentials');
+          logger.warn('Missing credentials');
           throw new Error('Email and password are required');
         }
 
@@ -30,7 +53,7 @@ export const authOptions: NextAuthOptions = {
           const user = result.rows[0];
 
           if (!user) {
-            logger.warn('Auth', 'User not found', { email: credentials.email });
+            logger.warn('User not found', { email: credentials.email });
             throw new Error('No user found with this email');
           }
 
@@ -38,11 +61,11 @@ export const authOptions: NextAuthOptions = {
           const isValid = await bcrypt.compare(credentials.password, user.password_hash);
 
           if (!isValid) {
-            logger.warn('Auth', 'Invalid password', { email: credentials.email });
+            logger.warn('Invalid password', { email: credentials.email });
             throw new Error('Invalid password');
           }
 
-          logger.info('Auth', 'User authenticated successfully', { userId: user.id });
+          logger.info('User authenticated successfully', { userId: user.id });
 
           // Return user object (without password)
           return {
@@ -50,7 +73,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
           };
         } catch (error) {
-          logger.error('Auth', 'Authentication error', {
+          logger.error('Authentication error', {
             error: error instanceof Error ? error.message : 'Unknown error',
             email: credentials.email
           });
@@ -64,25 +87,34 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    strategy: "jwt" as "jwt" | "database"
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user: User | null }) {
       if (user) {
-        logger.debug('Auth', 'Creating JWT token', { userId: user.id });
+        logger.debug('Creating JWT token', { userId: user.id });
         token.id = user.id;
         token.email = user.email;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
-        logger.debug('Auth', 'Creating user session', { userId: token.id });
+        logger.debug('Creating user session', { userId: token.id });
         session.user.id = token.id;
         session.user.email = token.email;
       }
       return session;
     }
   }
-}; 
+};
+
+export const auth = NextAuth(authConfig);
+export const authOptions = authConfig;
+
+export const handlers = auth;
+
+export const signIn = handlers.POST;
+export const signOut = handlers.GET;
+
+export default authOptions; 

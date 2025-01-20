@@ -1,5 +1,6 @@
 import pool from '@/lib/db';
 import { Task, TaskCreate, TaskUpdate, TaskStats } from '@/lib/types/task';
+import { logger } from '@/lib/utils/logger';
 
 export class TaskService {
   static async createTask(userId: number, task: TaskCreate): Promise<Task> {
@@ -10,14 +11,19 @@ export class TaskService {
       throw new Error('End time must be after start time');
     }
 
-    const result = await pool.query(
-      `INSERT INTO tasks (user_id, title, description, status, start_time, end_time)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [userId, title, description, status, start_time, end_time]
-    );
+    try {
+      const result = await pool.query(
+        `INSERT INTO tasks (user_id, title, description, status, start_time, end_time)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [userId, title, description, status, start_time, end_time]
+      );
 
-    return result.rows[0];
+      return result.rows[0];
+    } catch (error) {
+      logger.error('Error creating task:', error);
+      throw error;
+    }
   }
 
   static async getTasks(userId: number, page: number = 1, limit: number = 10): Promise<{ tasks: Task[], total: number }> {
@@ -79,17 +85,22 @@ export class TaskService {
       .map(([key], index) => `${key} = $${index + 3}`)
       .join(', ');
     
-    const values = updates_filtered.map(([_, value]) => value);
+    const values = updates_filtered.map(([, value]) => value);
 
-    const result = await pool.query(
-      `UPDATE tasks 
-       SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = $1 AND user_id = $2 AND deleted IS NOT TRUE
-       RETURNING *`,
-      [taskId, userId, ...values]
-    );
+    try {
+      const result = await pool.query(
+        `UPDATE tasks 
+         SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
+         WHERE id = $1 AND user_id = $2 AND deleted IS NOT TRUE
+         RETURNING *`,
+        [taskId, userId, ...values]
+      );
 
-    return result.rows[0] || null;
+      return result.rows[0] || null;
+    } catch (error) {
+      logger.error('Error updating task:', error);
+      throw error;
+    }
   }
 
   static async deleteTask(taskId: number, userId: number): Promise<boolean> {

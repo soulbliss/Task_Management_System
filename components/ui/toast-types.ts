@@ -1,9 +1,8 @@
 import * as React from "react"
+import { Toast, ToastAction } from "./toast"
 
-export interface ToastProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "destructive"
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+export interface ToastProps extends React.ComponentPropsWithoutRef<typeof Toast> {
+  variant?: "default" | "destructive";
 }
 
-export interface ToastActionElement extends React.ReactElement {} 
+export type ToastActionElement = React.ReactElement<typeof ToastAction> 

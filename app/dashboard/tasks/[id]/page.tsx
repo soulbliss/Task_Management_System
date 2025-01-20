@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Task } from '@/lib/types/task';
@@ -41,29 +41,29 @@ export default function TaskDetailPage() {
 
   const displayedTask = optimisticTask || task;
 
-  const fetchTask = async () => {
+  const fetchTask = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       const response = await fetch(`/api/tasks/${params.id}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch task');
       }
+
       const data = await response.json();
       setTask(data);
-      setOptimisticTask(null);
-    } catch (err) {
-      setError('Failed to load task');
-      console.error('Error fetching task:', err);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id]);
 
   useEffect(() => {
     fetchTask();
-  }, [params.id]);
+  }, [params.id, fetchTask]);
 
   async function updateTaskStatus(newStatus: string) {
     if (!task) return;

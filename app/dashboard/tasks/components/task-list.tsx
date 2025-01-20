@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Task } from '@/lib/types/task';
@@ -32,7 +32,11 @@ function formatDate(date: string | Date) {
   });
 }
 
-export default function TaskList() {
+interface TaskListProps {
+  status: string;
+}
+
+export default function TaskList({ status }: TaskListProps) {
   const searchParams = useSearchParams();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -40,22 +44,15 @@ export default function TaskList() {
   const [error, setError] = useState<string | null>(null);
 
   const page = Number(searchParams.get('page')) || 1;
-  const status = searchParams.get('status') || 'all';
   const search = searchParams.get('search') || '';
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: '10',
-        ...(status !== 'all' && { status }),
-        ...(search && { search }),
-      });
-
-      const response = await fetch(`/api/tasks?${queryParams}`);
+      const response = await fetch(`/api/tasks?page=${page}&status=${status}${search ? `&search=${search}` : ''}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch tasks');
       }
@@ -63,17 +60,16 @@ export default function TaskList() {
       const data = await response.json();
       setTasks(data.tasks);
       setTotalPages(Math.ceil(data.total / 10));
-    } catch (err) {
-      setError('Failed to load tasks');
-      console.error('Error fetching tasks:', err);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, status, search]);
 
   useEffect(() => {
     fetchTasks();
-  }, [page, status, search]);
+  }, [page, status, search, fetchTasks]);
 
   return (
     <AsyncBoundary

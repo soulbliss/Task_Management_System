@@ -19,7 +19,11 @@ const statusOptions: { label: string; value: TaskStatus | 'all' }[] = [
   { label: 'Completed', value: 'completed' },
 ];
 
-export default function TaskFilters() {
+interface TaskFiltersProps {
+  activeStatus: string;
+}
+
+export default function TaskFilters({ activeStatus }: TaskFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -36,7 +40,7 @@ export default function TaskFilters() {
     <div className="flex gap-4 items-center">
       <div className="w-[250px]">
         <Select
-          defaultValue={searchParams.get('status') || 'all'}
+          value={activeStatus}
           onValueChange={(value) => {
             router.push(`?${createQueryString('status', value)}`);
           }}

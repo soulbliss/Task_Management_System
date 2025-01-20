@@ -2,197 +2,143 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import { TaskStatus } from '@/lib/types/task';
 
-const taskFormSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
-  description: z.string().min(1, 'Description is required'),
-  status: z.enum(['pending', 'in_progress', 'completed']),
-  start_time: z.date({
-    required_error: "Start date is required",
-  }),
-  end_time: z.date({
-    required_error: "End date is required",
-  }),
-}).refine((data) => {
-  const start = new Date(data.start_time);
-  const end = new Date(data.end_time);
-  return end > start;
-}, {
-  message: "End date must be after start date",
-  path: ["end_time"],
-});
-
-type TaskFormValues = z.infer<typeof taskFormSchema>;
+interface TaskFormData {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  start_time: string;
+  end_time: string;
+}
 
 interface TaskFormProps {
-  initialData?: TaskFormValues;
+  initialData?: {
+    id: number;
+    title: string;
+    description: string;
+    status: TaskStatus;
+    start_time: Date;
+    end_time: Date;
+  };
 }
 
 export default function TaskForm({ initialData }: TaskFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskFormSchema),
-    defaultValues: initialData || {
-      title: '',
-      description: '',
-      status: 'pending',
-      start_time: new Date(),
-      end_time: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-    },
+  const [formData, setFormData] = useState<TaskFormData>({
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    status: initialData?.status || 'pending',
+    start_time: initialData?.start_time ? initialData.start_time.toISOString().slice(0, 16) : '',
+    end_time: initialData?.end_time ? initialData.end_time.toISOString().slice(0, 16) : '',
   });
 
-  async function onSubmit(data: TaskFormValues) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
-    setError(null);
 
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...data,
-          start_time: data.start_time.toISOString(),
-          end_time: data.end_time.toISOString(),
-        }),
+      const url = initialData ? `/api/tasks/${initialData.id}` : '/api/tasks';
+      const method = initialData ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create task');
+        throw new Error(initialData ? 'Failed to update task' : 'Failed to create task');
       }
+
+      toast({
+        title: 'Success',
+        description: initialData ? 'Task updated successfully' : 'Task created successfully',
+      });
 
       router.push('/dashboard/tasks');
       router.refresh();
     } catch (error) {
-      console.error('Error creating task:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create task');
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save task',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-      {error && (
-        <div className="bg-red-50 text-red-500 p-3 rounded-md mb-4">
-          {error}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <Input
-            {...form.register('title')}
-            placeholder="Task title"
-            className="w-full"
-          />
-          {form.formState.errors.title && (
-            <p className="text-red-500 text-sm mt-1">
-              {form.formState.errors.title.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <Textarea
-            {...form.register('description')}
-            placeholder="Task description"
-            className="w-full resize-none"
-          />
-          {form.formState.errors.description && (
-            <p className="text-red-500 text-sm mt-1">
-              {form.formState.errors.description.message}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Status</label>
-          <Select
-            onValueChange={(value) => form.setValue('status', value as TaskFormValues['status'])}
-            defaultValue={form.getValues('status')}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-          {form.formState.errors.status && (
-            <p className="text-red-500 text-sm mt-1">
-              {form.formState.errors.status.message}
-            </p>
-          )}
-        </div>
-
-        <div className="flex gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Start Date</label>
-            <div className="relative">
-              <DayPicker
-                mode="single"
-                selected={form.getValues('start_time')}
-                onSelect={(date) => date && form.setValue('start_time', date)}
-                className="border rounded-md p-3"
-              />
-            </div>
-            {form.formState.errors.start_time && (
-              <p className="text-red-500 text-sm mt-1">
-                {form.formState.errors.start_time.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">End Date</label>
-            <div className="relative">
-              <DayPicker
-                mode="single"
-                selected={form.getValues('end_time')}
-                onSelect={(date) => date && form.setValue('end_time', date)}
-                disabled={(date) => date < form.getValues('start_time')}
-                className="border rounded-md p-3"
-              />
-            </div>
-            {form.formState.errors.end_time && (
-              <p className="text-red-500 text-sm mt-1">
-                {form.formState.errors.end_time.message}
-              </p>
-            )}
-          </div>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Input
+          placeholder="Task title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+          disabled={isLoading}
+        />
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? 'Creating...' : 'Create Task'}
+      <div>
+        <Textarea
+          placeholder="Task description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          required
+          disabled={isLoading}
+        />
+      </div>
+
+      <div>
+        <Select
+          value={formData.status}
+          onValueChange={(value: TaskStatus) =>
+            setFormData({ ...formData, status: value })
+          }
+          disabled={isLoading}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Input
+          type="datetime-local"
+          value={formData.start_time}
+          onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+          required
+          disabled={isLoading}
+        />
+      </div>
+
+      <div>
+        <Input
+          type="datetime-local"
+          value={formData.end_time}
+          onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+          required
+          disabled={isLoading}
+        />
+      </div>
+
+      <Button type="submit" disabled={isLoading}>
+        {isLoading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Task' : 'Create Task')}
       </Button>
     </form>
   );

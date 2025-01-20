@@ -3,79 +3,100 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/components/ui/use-toast';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
 
     try {
       const result = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
+        email: data.email,
+        password: data.password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError(result.error);
+        toast({
+          title: 'Error',
+          description: 'Invalid email or password',
+          variant: 'destructive',
+        });
         return;
       }
 
-      // Redirect to dashboard on success
       router.push('/dashboard');
       router.refresh();
     } catch (error) {
-      setError('An unexpected error occurred. Please try again.');
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="space-y-2">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <div>
         <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           type="email"
+          {...form.register('email')}
+          className="mt-1"
           placeholder="Enter your email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          required
           disabled={isLoading}
         />
+        {form.formState.errors.email && (
+          <p className="text-sm text-red-500 mt-1">
+            {form.formState.errors.email.message}
+          </p>
+        )}
       </div>
 
-      <div className="space-y-2">
+      <div>
         <Label htmlFor="password">Password</Label>
         <Input
           id="password"
           type="password"
+          {...form.register('password')}
+          className="mt-1"
           placeholder="Enter your password"
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          required
           disabled={isLoading}
         />
+        {form.formState.errors.password && (
+          <p className="text-sm text-red-500 mt-1">
+            {form.formState.errors.password.message}
+          </p>
+        )}
       </div>
 
       <Button type="submit" className="w-full" disabled={isLoading}>

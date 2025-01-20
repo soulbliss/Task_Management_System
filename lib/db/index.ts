@@ -1,34 +1,36 @@
 import { Pool } from 'pg';
+import { logger } from '@/lib/utils/logger';
 
 // Database configuration with SSL settings for Neon
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  host: process.env.POSTGRES_HOST,
-  port: parseInt(process.env.POSTGRES_PORT || '5432'),
-  database: process.env.POSTGRES_DATABASE,
+  connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
+});
+
+pool.on('error', (err) => {
+  logger.error('Unexpected error on idle client', err);
+  process.exit(-1);
 });
 
 // Test the connection
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('Error acquiring client', err.stack);
+    logger.error('Error acquiring client', err);
     return;
   }
   if (!client) {
-    console.error('No client available');
+    logger.error('No client available');
     return;
   }
   client.query('SELECT NOW()', (err, result) => {
     release();
     if (err) {
-      console.error('Error executing query', err.stack);
+      logger.error('Error executing query', err);
       return;
     }
-    console.log('Connected to PostgreSQL database');
+    logger.info('Connected to PostgreSQL database at', result.rows[0].now);
   });
 });
 

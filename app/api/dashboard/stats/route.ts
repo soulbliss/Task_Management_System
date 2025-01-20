@@ -1,22 +1,30 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { TaskService } from '@/lib/services/taskService';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from "next-auth/next"
+import { auth } from "@/lib/auth"
+import { TaskService } from "@/lib/services/taskService"
+import { NextResponse } from "next/server"
+import { getUserByEmail } from "@/lib/services/userService"
+import type { Session } from "next-auth"
 
-export async function GET(req: Request) {
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getServerSession(auth) as Session | null
+
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const stats = await TaskService.getTaskStats(parseInt(session.user.id));
-    return NextResponse.json(stats);
+    const user = await getUserByEmail(session.user.email)
+    if (!user) {
+      return new NextResponse("User not found", { status: 404 })
+    }
+
+    const stats = await TaskService.getTaskStats(user.id)
+
+    return NextResponse.json(stats)
   } catch (error) {
-    console.error('Error fetching task stats:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error("Error fetching dashboard stats:", error)
+    return new NextResponse("Internal Server Error", { status: 500 })
   }
 } 

@@ -44,6 +44,7 @@ export default function EditTaskPage() {
   }
 
   const initialData = {
+    id: parseInt(task.id),
     title: task.title,
     description: task.description,
     status: task.status,
