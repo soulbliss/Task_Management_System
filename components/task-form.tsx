@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { logger } from '@/lib/utils/logger';
+import { toast } from 'sonner';
 
 interface TaskFormData {
   title: string;
@@ -21,6 +22,10 @@ interface TaskFormData {
   status: 'pending' | 'in_progress' | 'completed';
   start_time: string;
   end_time: string;
+}
+
+interface TaskFormProps {
+  onSuccess?: () => void;
 }
 
 const initialFormData: TaskFormData = {
@@ -31,20 +36,18 @@ const initialFormData: TaskFormData = {
   end_time: '',
 };
 
-export function TaskForm() {
+export function TaskForm({ onSuccess }: TaskFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<TaskFormData>(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     setError(null);
-    setIsLoading(true);
 
     try {
-      logger.debug('TaskForm', 'Creating task', formData);
-
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
@@ -53,38 +56,48 @@ export function TaskForm() {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create task');
+        throw new Error(responseData.error || 'Failed to create task');
       }
 
-      logger.info('TaskForm', 'Task created successfully', { taskId: data.id });
-      router.refresh(); // Refresh the page to show the new task
-      setFormData(initialFormData); // Reset form
+      logger.info('TaskForm', 'Task created successfully', { taskId: responseData.id });
+      setFormData(initialFormData);
+      toast.success('Task created successfully');
+      router.refresh();
+      onSuccess?.();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create task';
       logger.error('TaskForm', 'Error creating task', { error: errorMessage });
       setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleStatusChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, status: value as TaskFormData['status'] }));
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="text-red-500 text-sm">{error}</div>
-      )}
-      
       <div className="space-y-2">
         <Label htmlFor="title">Title</Label>
         <Input
           id="title"
+          name="title"
           value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          onChange={handleInputChange}
           required
-          disabled={isLoading}
         />
       </div>
 
@@ -92,10 +105,10 @@ export function TaskForm() {
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
+          name="description"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={handleInputChange}
           required
-          disabled={isLoading}
         />
       </div>
 
@@ -103,10 +116,7 @@ export function TaskForm() {
         <Label htmlFor="status">Status</Label>
         <Select
           value={formData.status}
-          onValueChange={(value: TaskFormData['status']) => 
-            setFormData({ ...formData, status: value })
-          }
-          disabled={isLoading}
+          onValueChange={handleStatusChange}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select status" />
@@ -124,11 +134,11 @@ export function TaskForm() {
           <Label htmlFor="start_time">Start Time</Label>
           <Input
             id="start_time"
+            name="start_time"
             type="datetime-local"
             value={formData.start_time}
-            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+            onChange={handleInputChange}
             required
-            disabled={isLoading}
           />
         </div>
 
@@ -136,17 +146,21 @@ export function TaskForm() {
           <Label htmlFor="end_time">End Time</Label>
           <Input
             id="end_time"
+            name="end_time"
             type="datetime-local"
             value={formData.end_time}
-            onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
+            onChange={handleInputChange}
             required
-            disabled={isLoading}
           />
         </div>
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? 'Creating...' : 'Create Task'}
+      {error && (
+        <div className="text-red-500 text-sm">{error}</div>
+      )}
+
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Creating...' : 'Create Task'}
       </Button>
     </form>
   );

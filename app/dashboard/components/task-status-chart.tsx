@@ -3,16 +3,17 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/utils/logger';
 
 interface TaskStatusCount {
-  status: string;
-  count: number;
+  name: string;
+  value: number;
 }
 
 const COLORS = {
-  pending: '#ef4444',     // red-500
-  in_progress: '#f59e0b', // amber-500
-  completed: '#22c55e',   // green-500
+  Pending: '#fbbf24',     // amber-400
+  'In Progress': '#3b82f6', // blue-500
+  Completed: '#22c55e',   // green-500
 };
 
 const RADIAN = Math.PI / 180;
@@ -23,7 +24,10 @@ const renderCustomizedLabel = ({
   innerRadius,
   outerRadius,
   percent,
+  value,
 }: any) => {
+  if (value === 0) return null;
+  
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -35,6 +39,8 @@ const renderCustomizedLabel = ({
       fill="white"
       textAnchor={x > cx ? 'start' : 'end'}
       dominantBaseline="central"
+      fontSize="12"
+      fontWeight="bold"
     >
       {`${(percent * 100).toFixed(0)}%`}
     </text>
@@ -49,23 +55,37 @@ export default function TaskStatusChart() {
   useEffect(() => {
     async function fetchTaskStats() {
       try {
-        const response = await fetch('/api/dashboard/stats');
+        const response = await fetch('/api/dashboard/stats', {
+          credentials: 'include',
+        });
+        
         if (!response.ok) {
           throw new Error('Failed to fetch task statistics');
         }
-        const stats = await response.json();
         
+        const stats = await response.json();
+        logger.debug('TaskStatusChart', 'Fetched task stats', stats);
+
         // Transform the data for the pie chart
         const chartData = [
-          { status: 'Pending', count: stats.pendingTasks },
-          { status: 'In Progress', count: stats.inProgressTasks },
-          { status: 'Completed', count: stats.completedTasks },
+          {
+            name: 'Pending',
+            value: stats.pendingTasks || 0
+          },
+          {
+            name: 'In Progress',
+            value: stats.inProgressTasks || 0
+          },
+          {
+            name: 'Completed',
+            value: stats.completedTasks || 0
+          }
         ];
         
         setData(chartData);
       } catch (err) {
+        logger.error('TaskStatusChart', 'Error fetching task stats', { error: err });
         setError('Failed to load task statistics');
-        console.error('Error fetching task stats:', err);
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +101,7 @@ export default function TaskStatusChart() {
           <CardTitle>Task Status Distribution</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center">
-          Loading chart...
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
         </CardContent>
       </Card>
     );
@@ -95,6 +115,20 @@ export default function TaskStatusChart() {
         </CardHeader>
         <CardContent className="h-[300px] flex items-center justify-center text-red-500">
           {error}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  if (total === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Task Status Distribution</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[300px] flex items-center justify-center text-gray-500">
+          No tasks found. Create your first task to see the distribution.
         </CardContent>
       </Card>
     );
@@ -115,18 +149,36 @@ export default function TaskStatusChart() {
               labelLine={false}
               label={renderCustomizedLabel}
               outerRadius={100}
-              fill="#8884d8"
-              dataKey="count"
+              innerRadius={40}
+              dataKey="value"
+              nameKey="name"
+              paddingAngle={2}
             >
-              {data.map((entry, index) => (
+              {data.map((entry) => (
                 <Cell
-                  key={`cell-${index}`}
-                  fill={COLORS[entry.status.toLowerCase().replace(' ', '_') as keyof typeof COLORS]}
+                  key={entry.name}
+                  fill={COLORS[entry.name as keyof typeof COLORS]}
+                  strokeWidth={1}
                 />
               ))}
             </Pie>
-            <Tooltip />
-            <Legend />
+            <Tooltip 
+              formatter={(value: number, name: string) => [
+                `${value} task${value !== 1 ? 's' : ''}`,
+                name
+              ]}
+            />
+            <Legend 
+              formatter={(value: string) => {
+                const item = data.find(d => d.name === value);
+                const count = item?.value || 0;
+                const percentage = total > 0 ? ((count / total) * 100).toFixed(0) : 0;
+                return `${value} (${count} - ${percentage}%)`;
+              }}
+              verticalAlign="middle"
+              align="right"
+              layout="vertical"
+            />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>

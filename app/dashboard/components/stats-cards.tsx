@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ClipboardList, CheckCircle, Clock, BarChart } from 'lucide-react';
 import { logger } from '@/lib/utils/logger';
 
-interface DashboardStats {
+interface TaskStats {
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
@@ -13,33 +14,36 @@ interface DashboardStats {
 }
 
 export default function StatsCards() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<TaskStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const response = await fetch('/api/dashboard/stats');
+        const response = await fetch('/api/dashboard/stats', {
+          credentials: 'include',
+        });
+
         if (!response.ok) {
           throw new Error('Failed to fetch statistics');
         }
+
         const data = await response.json();
-        logger.debug('StatsCards', 'Fetched dashboard stats', data);
+        logger.debug('StatsCards', 'Fetched stats', data);
         
-        // Ensure all required fields are present with default values
-        const validatedStats: DashboardStats = {
-          totalTasks: data.total_tasks ?? 0,
-          completedTasks: data.completed_tasks ?? 0,
-          pendingTasks: data.pending_tasks ?? 0,
-          inProgressTasks: data.in_progress_tasks ?? 0,
-          averageCompletionTime: data.average_completion_time ?? 0
+        // Ensure all values are numbers and not null/undefined
+        const sanitizedData = {
+          totalTasks: parseInt(data.total_tasks) || 0,
+          completedTasks: parseInt(data.completed_tasks) || 0,
+          pendingTasks: parseInt(data.pending_tasks) || 0,
+          inProgressTasks: parseInt(data.in_progress_tasks) || 0,
+          averageCompletionTime: Number(data.average_completion_time) || 0
         };
         
-        setStats(validatedStats);
+        setStats(sanitizedData);
       } catch (err) {
-        const errorMessage = 'Failed to load statistics';
-        logger.error('StatsCards', errorMessage, { error: err });
-        setError(errorMessage);
+        logger.error('StatsCards', 'Error fetching stats', { error: err });
+        setError('Failed to load statistics');
       }
     }
 
@@ -48,66 +52,77 @@ export default function StatsCards() {
 
   if (error) {
     return (
-      <div className="text-red-500 text-center p-4">
-        {error}
-      </div>
+      <div className="text-red-500 text-center py-4">{error}</div>
     );
   }
 
   if (!stats) {
-    return <StatsCardsSkeleton />;
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 card-header">
+              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">--</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
   }
 
-  const completionRate = stats.totalTasks === 0 ? 0 : 
-    Math.round((stats.completedTasks / stats.totalTasks) * 100);
+  const calculatePercentage = (value: number) => {
+    if (!stats || !value || stats.totalTasks === 0) return 0;
+    return Math.round((value / stats.totalTasks) * 100);
+  };
 
   const cards = [
     {
       title: "Total Tasks",
-      value: String(stats.totalTasks || 0),
+      value: stats.totalTasks,
+      icon: ClipboardList,
+      color: "text-blue-600",
     },
     {
-      title: "Completion Rate",
-      value: `${completionRate}%`,
+      title: "Completed",
+      value: stats.completedTasks,
+      percentage: calculatePercentage(stats.completedTasks),
+      icon: CheckCircle,
+      color: "text-green-600",
     },
     {
-      title: "Active Tasks",
-      value: String((stats.pendingTasks || 0) + (stats.inProgressTasks || 0)),
+      title: "In Progress",
+      value: stats.inProgressTasks,
+      percentage: calculatePercentage(stats.inProgressTasks),
+      icon: Clock,
+      color: "text-blue-600",
     },
     {
-      title: "Avg. Completion Time",
-      value: stats.averageCompletionTime ? `${Math.round(stats.averageCompletionTime)}h` : '0h',
+      title: "Pending",
+      value: stats.pendingTasks,
+      percentage: calculatePercentage(stats.pendingTasks),
+      icon: BarChart,
+      color: "text-yellow-600",
     },
   ];
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {card.title}
-            </CardTitle>
+      {cards.map((card, i) => (
+        <Card key={i}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 card-header">
+            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+            <card.icon className={`h-4 w-4 ${card.color}`} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{card.value}</div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function StatsCardsSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Loading...</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">--</div>
+            {'percentage' in card && (
+              <p className="text-xs text-muted-foreground">
+                {card.percentage}% of total tasks
+              </p>
+            )}
           </CardContent>
         </Card>
       ))}

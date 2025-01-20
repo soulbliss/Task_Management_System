@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/utils/logger';
 
 interface Task {
   id: string;
@@ -14,25 +14,66 @@ interface Task {
 
 export default function RecentTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchRecentTasks() {
       try {
-        const response = await fetch('/api/tasks?limit=5');
+        const response = await fetch('/api/tasks?limit=5', {
+          credentials: 'include',
+        });
+
         if (!response.ok) {
-          throw new Error('Failed to fetch tasks');
+          throw new Error('Failed to fetch recent tasks');
         }
+
         const data = await response.json();
+        logger.debug('RecentTasks', 'Fetched recent tasks', data);
         setTasks(data.tasks);
       } catch (err) {
+        logger.error('RecentTasks', 'Error fetching recent tasks', { error: err });
         setError('Failed to load recent tasks');
-        console.error('Error fetching tasks:', err);
+      } finally {
+        setIsLoading(false);
       }
     }
 
     fetchRecentTasks();
   }, []);
+
+  const getStatusColor = (status: Task['status']) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Tasks</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[300px] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (error) {
     return (
@@ -40,10 +81,21 @@ export default function RecentTasks() {
         <CardHeader>
           <CardTitle>Recent Tasks</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-red-500 text-center">
-            {error}
-          </div>
+        <CardContent className="h-[300px] flex items-center justify-center text-red-500">
+          {error}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Tasks</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[300px] flex items-center justify-center text-gray-500">
+          No tasks found. Create your first task to see it here.
         </CardContent>
       </Card>
     );
@@ -55,37 +107,24 @@ export default function RecentTasks() {
         <CardTitle>Recent Tasks</CardTitle>
       </CardHeader>
       <CardContent>
-        {tasks.length === 0 ? (
-          <div className="text-center text-gray-500">No tasks found</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>{task.title}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      task.status === 'completed' ? 'default' :
-                      task.status === 'in_progress' ? 'secondary' : 'destructive'
-                    }>
-                      {task.status.replace('_', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(task.created_at).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+        <div className="space-y-4">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className="flex items-center justify-between p-4 rounded-lg border bg-card"
+            >
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">{task.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(task.created_at)}
+                </p>
+              </div>
+              <Badge className={getStatusColor(task.status)}>
+                {task.status.replace('_', ' ')}
+              </Badge>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
