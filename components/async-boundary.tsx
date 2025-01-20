@@ -8,7 +8,7 @@ interface AsyncBoundaryProps {
   onError?: (error: Error) => void;
 }
 
-export default function AsyncBoundary({
+export function AsyncBoundary({
   children,
   fallback = <div>Loading...</div>,
   onError,
@@ -29,9 +29,8 @@ export default function AsyncBoundary({
     );
   }
 
-  return (
-    <div>
-      {children}
-    </div>
-  );
-} 
+  return fallback && !children ? fallback : <>{children}</>;
+}
+
+// Add a default export
+export default AsyncBoundary; 
