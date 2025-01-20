@@ -27,7 +27,7 @@ declare module "next-auth/jwt" {
   }
 }
 
-const authConfig = {
+const config = {
   providers: [
     CredentialsProvider({
       id: 'credentials',
@@ -36,12 +36,12 @@ const authConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         logger.debug('Attempting to authorize user', { email: credentials?.email });
 
         if (!credentials?.email || !credentials?.password) {
           logger.warn('Missing credentials');
-          throw new Error('Email and password are required');
+          return null;
         }
 
         try {
@@ -89,11 +89,11 @@ const authConfig = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user: User | null }) {
       if (user) {
         logger.debug('Creating JWT token', { userId: user.id });
         token.id = user.id;
@@ -101,7 +101,7 @@ const authConfig = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
         logger.debug('Creating user session', { userId: token.id });
         session.user.id = token.id;
@@ -110,14 +110,13 @@ const authConfig = {
       return session;
     }
   },
-  debug: process.env.NODE_ENV === 'development',
-};
+  // debug: process.env.NODE_ENV === 'development',
+  trustHost: true
+} as const;
 
-export const auth = NextAuth(authConfig);
-export const authOptions = authConfig;
-
+export const authOptions = config;
+export const auth = NextAuth(config);
 export const handlers = auth;
-
 export const signIn = handlers.POST;
 export const signOut = handlers.GET;
 
