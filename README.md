@@ -167,3 +167,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Shadcn UI](https://ui.shadcn.com/)
 - [NextAuth.js](https://next-auth.js.org/)
 - [Recharts](https://recharts.org/)
+
+##Hosted At
+-----
+task-management-system-x98.vercel.app 
