@@ -1,96 +1,116 @@
 # Task Management System
 
-A modern, full-stack task management application built with Next.js, TypeScript, and PostgreSQL.
+A modern, intuitive task management application built with Next.js, featuring a sleek user interface and powerful task organization capabilities.
 
-![Task Management System](./public/dashboard-preview.png)
+## 🚀 Features
 
-## Features
+- **User Authentication**
+  - Secure login and registration
+  - Protected routes and sessions
+  - Password encryption
 
-- 🔐 **Secure Authentication**
-  - Email and password-based authentication
-  - Protected routes and API endpoints
-  - Session management with NextAuth.js
+- **Task Management**
+  - Create, edit, and delete tasks
+  - Set task priorities and deadlines
+  - Track task status (pending, in progress, completed)
+  - Real-time updates
 
-- 📊 **Interactive Dashboard**
-  - Real-time task statistics
-  - Status distribution visualization
-  - Recent tasks overview
-  - Beautiful UI with gradients and animations
+- **Dashboard**
+  - Overview of task statistics
+  - Recent tasks view
+  - Performance metrics
+  - Intuitive navigation
 
-- ✅ **Task Management**
-  - Create, read, update, and delete tasks
-  - Set task status (Pending, In Progress, Completed)
-  - Schedule tasks with start and end times
-  - Filter and search tasks
-  - Pagination support
-
-- 🎨 **Modern UI/UX**
+- **Modern UI/UX**
   - Responsive design
-  - Glassmorphism effects
-  - Smooth animations and transitions
-  - Status-based color coding
-  - Loading states and error handling
+  - Dark mode support
+  - Clean and minimalist interface
+  - Interactive components
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 - **Frontend**
-  - Next.js 14 (App Router)
-  - TypeScript
+  - Next.js 14
+  - React 18
   - Tailwind CSS
-  - Shadcn UI Components
-  - Recharts for visualizations
+  - Radix UI Components
 
 - **Backend**
-  - Next.js API Routes
-  - PostgreSQL Database
+  - PostgreSQL with Neon
   - NextAuth.js for authentication
-  - Node-Postgres (pg) for database operations
+  - Node.js
 
-- **Development**
-  - ESLint for code quality
-  - Prettier for code formatting
-  - TypeScript for type safety
+- **Development Tools**
+  - TypeScript
+  - ESLint
+  - Prettier
 
-## Getting Started
+## 🚦 Getting Started
 
-### Prerequisites
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/aakashkadyan/Task_Management_System.git
+   cd Task_Management_System
+   ```
 
-- Node.js 18+ installed
-- PostgreSQL database server running
-- Git for version control
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### Installation
+3. **Set up environment variables**
+   Create a `.env` file in the root directory with:
+   ```env
+   DATABASE_URL=your_postgresql_url
+   NEXTAUTH_SECRET=your_secret_key
+   NEXTAUTH_URL=http://localhost:3000
+   ```
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/task-management-system.git
-cd task-management-system
-```
+4. **Initialize the database**
+   ```bash
+   npm run db:init
+   ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-3. Set up environment variables:
-Create a `.env.local` file in the root directory with the following variables:
-```env
-DATABASE_URL=postgresql://username:password@localhost:5432/taskdb
-NEXTAUTH_SECRET=your-secret-key
-NEXTAUTH_URL=http://localhost:3000
-```
+   Visit `http://localhost:3000` to see the application.
 
-4. Initialize the database:
-```bash
-npm run db:init
-```
+## 📱 Features in Detail
 
-5. Run the development server:
-```bash
-npm run dev
-```
+- **Task Creation and Management**
+  - Title and description
+  - Start and end dates
+  - Priority levels
+  - Status tracking
+  - Categories and tags
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+- **User Dashboard**
+  - Task statistics
+  - Progress tracking
+  - Upcoming deadlines
+  - Performance metrics
+
+- **Security Features**
+  - JWT authentication
+  - Secure password handling
+  - Protected API routes
+  - Session management
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👨‍💻 Author
+
+Aakash Kadyan
+- GitHub: [@aakashkadyan](https://github.com/aakashkadyan)
 
 ## Project Structure
 
@@ -148,25 +168,12 @@ CREATE TABLE tasks (
 );
 ```
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## Acknowledgments
 
 - [Next.js](https://nextjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
-- [Shadcn UI](https://ui.shadcn.com/)
+- [Radix UI](https://www.radix-ui.com/)
 - [NextAuth.js](https://next-auth.js.org/)
-- [Recharts](https://recharts.org/)
 
 ##Hosted At
 -----
