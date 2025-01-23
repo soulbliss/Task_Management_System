@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+package-lock.json
 
 # testing
 /coverage
@@ -12,21 +13,34 @@
 # next.js
 /.next/
 /out/
+.next/
+.swc/
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# local env files
-.env*.local
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
 
 # vercel
 .vercel
@@ -34,3 +48,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# fonts (if you want to track them elsewhere)
+# /app/fonts/
