@@ -4,9 +4,7 @@ import { logger } from '@/lib/utils/logger';
 // Database configuration with SSL settings for Neon
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: true
 });
 
 pool.on('error', (err) => {

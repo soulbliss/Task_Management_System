@@ -9,10 +9,10 @@ export default function HomePage() {
       <div className="text-center space-y-6 p-8">
         <h1 className="text-4xl font-bold">Task Management System</h1>
         <p className="text-gray-600 max-w-md mx-auto">
-          Efficiently manage your tasks, track progress, and meet deadlines with our comprehensive task management solution.
+          Stay organized, boost productivity, and achieve your goals with our intuitive task management platform.
         </p>
         <div className="space-x-4">
-          <Button asChild>
+          <Button asChild className="bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200">
             <Link href="/register">Register</Link>
           </Button>
           <Button variant="outline" asChild>
