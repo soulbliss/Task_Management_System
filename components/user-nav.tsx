@@ -16,7 +16,7 @@ import { signOut, useSession } from 'next-auth/react';
 export function UserNav() {
   const { data: session } = useSession();
   const userEmail = session?.user?.email ?? '';
-  //@ts-ignore
+  //@ts-expect-error
   const initials = userEmail
     .split('@')[0]
     .slice(0, 2)
