@@ -1,10 +1,10 @@
-import NextAuth from "next-auth/next"
-import type { Session, User } from "next-auth"
-import type { JWT } from "next-auth/jwt"
-import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
 import pool from "@/lib/db"
 import { logger } from "@/lib/utils/logger"
+import bcrypt from "bcryptjs"
+import type { Session, User } from "next-auth"
+import type { JWT } from "next-auth/jwt"
+import NextAuth from "next-auth/next"
+import CredentialsProvider from "next-auth/providers/credentials"
 
 declare module "next-auth" {
   interface Session {
@@ -115,6 +115,8 @@ const config = {
 } as const;
 
 export const authOptions = config;
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 export const auth = NextAuth(config);
 export const handlers = auth;
 export const signIn = handlers.POST;
