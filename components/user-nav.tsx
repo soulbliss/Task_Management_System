@@ -1,6 +1,7 @@
 'use client';
 
-import { signOut, useSession } from 'next-auth/react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,13 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { logger } from '@/lib/utils/logger';
+import { signOut, useSession } from 'next-auth/react';
 
 export function UserNav() {
   const { data: session } = useSession();
-  const userEmail = session?.user?.email || '';
+  const userEmail = session?.user?.email ?? '';
+  //@ts-ignore
   const initials = userEmail
     .split('@')[0]
     .slice(0, 2)
