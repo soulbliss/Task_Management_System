@@ -16,7 +16,8 @@ import { signOut, useSession } from 'next-auth/react';
 export function UserNav() {
   const { data: session } = useSession();
   const userEmail = session?.user?.email ?? '';
-  //@ts-expect-error
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   const initials = userEmail
     .split('@')[0]
     .slice(0, 2)
