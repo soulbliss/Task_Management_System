@@ -1,8 +1,10 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
+import '@/styles/globals.css';
+
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { cn } from '@/lib/utils';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,7 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body
+        className={cn(
+          'min-h-screen bg-background font-sans antialiased',
+          inter.className
+        )}
+      >
         <ErrorBoundary>
           <AuthProvider>
             {children}

@@ -1,23 +1,23 @@
-import { NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger';
 import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
-import { logger } from '@/lib/utils/logger';
+import { NextResponse } from 'next/server';
 
 // Add specific routes that require authentication
 const protectedRoutes = ['/dashboard', '/tasks'];
 
 export async function middleware(req: NextRequest) {
   logger.debug('Middleware', 'Processing request', { path: req.nextUrl.pathname });
-  
-  const token = await getToken({ 
+
+  const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET
   });
-  
+
   const isAuth = !!token;
   const isAuthPage = req.nextUrl.pathname.startsWith('/login') ||
-                    req.nextUrl.pathname.startsWith('/register');
-  const isProtectedRoute = protectedRoutes.some(route => 
+    req.nextUrl.pathname.startsWith('/register');
+  const isProtectedRoute = protectedRoutes.some(route =>
     req.nextUrl.pathname.startsWith(route)
   );
 
@@ -29,9 +29,9 @@ export async function middleware(req: NextRequest) {
   });
 
   // Always allow API routes and static files
-  if (req.nextUrl.pathname.startsWith('/api') || 
-      req.nextUrl.pathname.startsWith('/_next') ||
-      req.nextUrl.pathname === '/favicon.ico') {
+  if (req.nextUrl.pathname.startsWith('/api') ||
+    req.nextUrl.pathname.startsWith('/_next') ||
+    req.nextUrl.pathname === '/favicon.ico') {
     logger.debug('Middleware', 'Allowing API/static route', { path: req.nextUrl.pathname });
     return NextResponse.next();
   }
